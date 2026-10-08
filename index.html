@@ -1,0 +1,188 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="theme-color" content="#05070A">
+  <title>MAVIC 3 ENTERPRISE — 3D ANALYSIS</title>
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+
+  <!-- ===== TELA DE INICIALIZAÇÃO ===== -->
+  <div id="loading-screen">
+    <div class="boot-grid"></div>
+    <div class="boot-box">
+      <div class="boot-title">INITIALIZING SYSTEM...</div>
+      <div class="boot-model">MAVIC 3 ENTERPRISE</div>
+      <div class="boot-sub" id="boot-status">LOADING 3D MODEL</div>
+      <div class="boot-bar"><div id="boot-bar-fill"></div></div>
+      <div class="boot-pct" id="boot-pct">0%</div>
+      <div class="boot-note" id="boot-note"></div>
+      <button id="enter-btn" type="button" disabled>ENTER SYSTEM</button>
+    </div>
+  </div>
+
+  <!-- ===== ERRO FATAL (WebGL / CDN) ===== -->
+  <div id="fatal" hidden>
+    <div class="fatal-box">
+      <div class="fatal-title">SYSTEM ERROR</div>
+      <p id="fatal-msg"></p>
+    </div>
+  </div>
+
+  <main id="app">
+
+    <header class="top-bar">
+      <div class="brand">
+        <span class="logo-dot"></span>
+        <div>
+          <h1>MAVIC 3 ENTERPRISE</h1>
+          <p>3D ANALYSIS SYSTEM</p>
+        </div>
+      </div>
+      <div class="clock">
+        <span class="lbl">SYSTEM TIME</span>
+        <span id="clock">--:--:--</span>
+      </div>
+    </header>
+
+    <section id="viewer">
+
+      <canvas id="three-canvas"></canvas>
+
+      <!-- Overlay do modo técnico (réguas, referências) -->
+      <div id="tech-overlay" aria-hidden="true">
+        <div class="ruler ruler-x"></div>
+        <div class="ruler ruler-y"></div>
+        <div class="crosshair"></div>
+        <div class="tech-tag tl">REF FRAME · WORLD</div>
+        <div class="tech-tag tr">BBOX 347 × 283 × 107 mm</div>
+        <div class="tech-tag bl" id="tech-coord">CAM +0.00 +0.00 +0.00</div>
+      </div>
+
+      <!-- Painel do scanner -->
+      <div id="scan-panel" class="card" hidden>
+        <div class="card-title">SCANNING AIRFRAME...</div>
+        <ul id="scan-list"></ul>
+        <div id="scan-done">SCAN COMPLETE</div>
+      </div>
+
+      <div class="hud">
+
+        <!-- Coluna esquerda -->
+        <aside id="hud-left">
+          <div class="card" id="info-card">
+            <div class="card-title">MAVIC 3 ENTERPRISE<small>3D ANALYSIS SYSTEM</small></div>
+            <dl class="kv">
+              <div><dt>MODEL</dt><dd>MAVIC 3 ENTERPRISE</dd></div>
+              <div><dt>STATUS</dt><dd class="ok">ONLINE</dd></div>
+              <div><dt>SYSTEM</dt><dd>3D VIEWER</dd></div>
+              <div><dt>MODE</dt><dd id="mode-val">ENGINEERING</dd></div>
+            </dl>
+          </div>
+
+          <div class="card" id="tech-panel">
+            <div class="card-title">TECHNICAL DATA
+              <button class="close-btn" type="button" data-ui="close-data" aria-label="Close">✕</button>
+            </div>
+            <dl class="kv stack">
+              <div><dt>DIMENSIONS</dt><dd>347 × 283 × 107 mm</dd></div>
+              <div><dt>WEIGHT</dt><dd>Approx. 915 g</dd></div>
+              <div><dt>MAX FLIGHT TIME</dt><dd>45 min</dd></div>
+              <div><dt>MAX SPEED</dt><dd>72 km/h</dd></div>
+              <div><dt>TRANSMISSION</dt><dd>Up to 15 km</dd></div>
+              <div><dt>GNSS</dt><dd>GPS / GLONASS / Galileo / BeiDou</dd></div>
+            </dl>
+          </div>
+        </aside>
+
+        <!-- Coluna direita -->
+        <aside id="hud-right">
+          <div class="card" id="rot-card">
+            <div class="card-title">ROTATION</div>
+            <dl class="kv rot">
+              <div><dt>YAW</dt><dd id="yaw-val">0.0°</dd></div>
+              <div><dt>PITCH</dt><dd id="pitch-val">0.0°</dd></div>
+              <div><dt>ROLL</dt><dd id="roll-val">0.0°</dd></div>
+            </dl>
+          </div>
+
+          <div class="card" id="pos-card">
+            <div class="card-title">POSITION</div>
+            <div class="pos-wrap">
+              <dl class="kv pos">
+                <div><dt>X</dt><dd id="pos-x">+0.00</dd></div>
+                <div><dt>Y</dt><dd id="pos-y">+0.00</dd></div>
+                <div><dt>Z</dt><dd id="pos-z">+0.00</dd></div>
+              </dl>
+              <canvas id="gizmo" width="84" height="84" aria-label="X Y Z"></canvas>
+            </div>
+          </div>
+
+          <div id="component-panel" class="card">
+            <div class="card-title"><span id="comp-title">COMPONENT ANALYSIS</span>
+              <button class="close-btn" type="button" data-ui="close-comp" aria-label="Close">✕</button>
+            </div>
+            <div id="comp-empty" class="comp-empty">Select a component<br>to inspect.</div>
+            <dl id="comp-rows" class="kv stack" hidden></dl>
+            <div class="chips" id="chips">
+              <button type="button" class="chip" data-comp="BODY">BODY</button>
+              <button type="button" class="chip" data-comp="ARM">ARM</button>
+              <button type="button" class="chip" data-comp="MOTOR">MOTOR</button>
+              <button type="button" class="chip" data-comp="PROPELLER">PROPELLER</button>
+              <button type="button" class="chip" data-comp="CAMERA">CAMERA</button>
+              <button type="button" class="chip" data-comp="GIMBAL">GIMBAL</button>
+              <button type="button" class="chip" data-comp="SENSOR">SENSOR</button>
+              <button type="button" class="chip" data-comp="GPS">GPS</button>
+              <button type="button" class="chip" data-comp="MAINBOARD">MAINBOARD</button>
+            </div>
+          </div>
+        </aside>
+      </div>
+
+      <div id="cursor" aria-hidden="true"><i></i><span>INSPECT</span></div>
+      <div id="toast" role="status"></div>
+    </section>
+
+    <section id="control-panel">
+      <div class="status-strip">
+        <span class="s-item"><b>SYSTEM STATUS</b></span>
+        <span class="s-item ok"><i class="dot"></i>ONLINE</span>
+        <span class="s-item"><b>FPS</b> <em id="fps-val">--</em></span>
+        <span class="s-item hide-m"><b>WEBGL</b> <em id="webgl-val">ACTIVE</em></span>
+        <span class="s-item hide-m"><b>MODEL</b> <em id="model-val">MAVIC 3 ENTERPRISE</em></span>
+      </div>
+
+      <div class="buttons">
+        <button class="btn" type="button" data-action="auto" data-toggle><i class="led"></i><span class="lbl">↻ AUTO</span><span class="st">OFF</span></button>
+        <button class="btn" type="button" data-action="reset"><span class="lbl">RESET</span></button>
+        <button class="btn" type="button" data-action="front"><span class="lbl">FRONT</span></button>
+        <button class="btn" type="button" data-action="rear"><span class="lbl">REAR</span></button>
+        <button class="btn" type="button" data-action="top"><span class="lbl">TOP</span></button>
+        <button class="btn" type="button" data-action="bottom"><span class="lbl">BOTTOM</span></button>
+        <button class="btn" type="button" data-action="explode" data-toggle><i class="led"></i><span class="lbl">EXPLODE</span><span class="st">OFF</span></button>
+        <button class="btn" type="button" data-action="scan" data-toggle><i class="led"></i><span class="lbl">SCAN</span><span class="st">OFF</span></button>
+        <button class="btn" type="button" data-action="wire" data-toggle><i class="led"></i><span class="lbl">WIRE</span><span class="st">OFF</span></button>
+        <button class="btn" type="button" data-action="tech" data-toggle><i class="led"></i><span class="lbl">TECH</span><span class="st">OFF</span></button>
+        <button class="btn" type="button" data-action="light" data-toggle><i class="led"></i><span class="lbl">LIGHT</span><span class="st">ON</span></button>
+        <button class="btn" type="button" data-action="axis" data-toggle><i class="led"></i><span class="lbl">AXIS</span><span class="st">OFF</span></button>
+        <button class="btn" type="button" data-action="demo" data-toggle><i class="led"></i><span class="lbl">DEMO</span><span class="st">OFF</span></button>
+        <button class="btn only-m" type="button" data-ui="open-data"><span class="lbl">DATA</span></button>
+        <button class="btn only-m" type="button" data-ui="open-comp"><span class="lbl">INFO</span></button>
+      </div>
+    </section>
+
+  </main>
+
+  <!-- Three.js via CDN (versão fixa r128 — scripts clássicos, funcionam abrindo index.html direto) -->
+  <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/build/three.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/loaders/GLTFLoader.js"></script>
+
+  <script src="js/drone.js"></script>
+  <script src="js/controls.js"></script>
+  <script src="js/interface.js"></script>
+  <script src="js/main.js"></script>
+</body>
+</html>
